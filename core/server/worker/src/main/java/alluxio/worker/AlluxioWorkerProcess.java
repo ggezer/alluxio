@@ -250,6 +250,7 @@ public final class AlluxioWorkerProcess implements WorkerProcess {
         NetworkAddressUtils.getPort(ServiceType.WORKER_DATA),
         NetworkAddressUtils.getPort(ServiceType.WORKER_WEB));
     createGrpcServer().start();
+    LOG.info("Started gRPC server on address {}", mRpcAddress);
     mIsServingRPC = true;
 
     mGrpcServer.awaitTermination();
