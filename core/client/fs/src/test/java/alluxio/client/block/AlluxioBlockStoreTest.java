@@ -21,7 +21,6 @@ import alluxio.client.block.policy.BlockLocationPolicy;
 import alluxio.client.block.policy.options.GetWorkerOptions;
 import alluxio.client.block.stream.BlockInStream;
 import alluxio.client.block.stream.BlockOutStream;
-import alluxio.client.file.FileSystemClientOptions;
 import alluxio.client.file.FileSystemContext;
 import alluxio.client.file.URIStatus;
 import alluxio.client.file.options.InStreamOptions;
