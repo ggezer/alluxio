@@ -13,6 +13,7 @@ package alluxio.master.file;
 
 import alluxio.AlluxioURI;
 import alluxio.RpcUtils;
+<<<<<<< HEAD
 import alluxio.grpc.CheckConsistencyPOptions;
 import alluxio.grpc.CheckConsistencyPRequest;
 import alluxio.grpc.CheckConsistencyPResponse;
@@ -80,11 +81,82 @@ import alluxio.master.file.contexts.SetAclContext;
 import alluxio.master.file.contexts.SetAttributeContext;
 import alluxio.underfs.UfsMode;
 import alluxio.grpc.GrpcUtils;
+=======
+import alluxio.RpcUtils.RpcCallableThrowsIOException;
+import alluxio.wire.SyncPointInfo;
+import alluxio.master.file.options.CheckConsistencyOptions;
+import alluxio.master.file.options.CompleteFileOptions;
+import alluxio.master.file.options.CreateDirectoryOptions;
+import alluxio.master.file.options.CreateFileOptions;
+import alluxio.master.file.options.DeleteOptions;
+import alluxio.master.file.options.DescendantType;
+import alluxio.master.file.options.FreeOptions;
+import alluxio.master.file.options.GetStatusOptions;
+import alluxio.master.file.options.ListStatusOptions;
+import alluxio.master.file.options.LoadMetadataOptions;
+import alluxio.master.file.options.MountOptions;
+import alluxio.master.file.options.RenameOptions;
+import alluxio.master.file.options.SetAclOptions;
+import alluxio.master.file.options.SetAttributeOptions;
+import alluxio.security.authorization.AclEntry;
+import alluxio.thrift.AlluxioTException;
+import alluxio.thrift.CheckConsistencyTOptions;
+import alluxio.thrift.CheckConsistencyTResponse;
+import alluxio.thrift.CompleteFileTOptions;
+import alluxio.thrift.CompleteFileTResponse;
+import alluxio.thrift.CreateDirectoryTOptions;
+import alluxio.thrift.CreateDirectoryTResponse;
+import alluxio.thrift.CreateFileTOptions;
+import alluxio.thrift.CreateFileTResponse;
+import alluxio.thrift.DeleteTOptions;
+import alluxio.thrift.DeleteTResponse;
+import alluxio.thrift.FileInfo;
+import alluxio.thrift.FileSystemMasterClientService;
+import alluxio.thrift.FreeTOptions;
+import alluxio.thrift.FreeTResponse;
+import alluxio.thrift.GetMountTableTResponse;
+import alluxio.thrift.GetNewBlockIdForFileTOptions;
+import alluxio.thrift.GetNewBlockIdForFileTResponse;
+import alluxio.thrift.GetServiceVersionTOptions;
+import alluxio.thrift.GetServiceVersionTResponse;
+import alluxio.thrift.GetStatusTOptions;
+import alluxio.thrift.GetStatusTResponse;
+import alluxio.thrift.GetSyncPathListTResponse;
+import alluxio.thrift.ListStatusTOptions;
+import alluxio.thrift.ListStatusTResponse;
+import alluxio.thrift.LoadMetadataTOptions;
+import alluxio.thrift.LoadMetadataTResponse;
+import alluxio.thrift.MountTOptions;
+import alluxio.thrift.MountTResponse;
+import alluxio.thrift.RenameTOptions;
+import alluxio.thrift.RenameTResponse;
+import alluxio.thrift.ScheduleAsyncPersistenceTOptions;
+import alluxio.thrift.ScheduleAsyncPersistenceTResponse;
+import alluxio.thrift.SetAclTOptions;
+import alluxio.thrift.SetAclTResponse;
+import alluxio.thrift.SetAttributeTOptions;
+import alluxio.thrift.SetAttributeTResponse;
+import alluxio.thrift.StartSyncTOptions;
+import alluxio.thrift.StartSyncTResponse;
+import alluxio.thrift.StopSyncTOptions;
+import alluxio.thrift.StopSyncTResponse;
+import alluxio.thrift.TAclEntry;
+import alluxio.thrift.TSetAclAction;
+import alluxio.thrift.UnmountTOptions;
+import alluxio.thrift.UnmountTResponse;
+import alluxio.thrift.UpdateUfsModeTOptions;
+import alluxio.thrift.UpdateUfsModeTResponse;
+import alluxio.underfs.UnderFileSystem;
+>>>>>>> upstream/master
 import alluxio.wire.MountPointInfo;
 import alluxio.grpc.SetAclAction;
 
 import com.google.common.base.Preconditions;
+<<<<<<< HEAD
 import io.grpc.stub.StreamObserver;
+=======
+import org.apache.thrift.TException;
+>>>>>>> upstream/master
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,6 +316,7 @@ public final class FileSystemMasterClientServiceHandler
   }
 
   @Override
+<<<<<<< HEAD
   public void remove(DeletePRequest request, StreamObserver<DeletePResponse> responseObserver) {
     String path = request.getPath();
     DeletePOptions options = request.getOptions();
@@ -251,6 +324,34 @@ public final class FileSystemMasterClientServiceHandler
       mFileSystemMaster.delete(new AlluxioURI(path), DeleteContext.defaults(options.toBuilder()));
       return DeletePResponse.newBuilder().build();
     }, "Remove", "path=%s, options=%s", responseObserver, path, options);
+=======
+  public GetSyncPathListTResponse getSyncPathList() throws AlluxioTException, TException {
+    return RpcUtils.call(LOG, (RpcCallableThrowsIOException<GetSyncPathListTResponse>) () -> {
+      List<SyncPointInfo> pathList = mFileSystemMaster.getSyncPathList();
+      List<alluxio.thrift.SyncPointInfo> syncPointInfoList = new ArrayList<>();
+      for (SyncPointInfo syncPointInfo : pathList) {
+        syncPointInfoList.add(syncPointInfo.toThrift());
+      }
+      return new GetSyncPathListTResponse(syncPointInfoList);
+    }, "GetSyncPathList", "");
+  }
+
+  @Override
+  public DeleteTResponse remove(final String path, final boolean recursive,
+      final DeleteTOptions options) throws AlluxioTException {
+    return RpcUtils.call(LOG, (RpcCallableThrowsIOException<DeleteTResponse>) () -> {
+      if (options == null) {
+        // For Alluxio client v1.4 or earlier.
+        // NOTE, we try to be conservative here so early Alluxio clients will not be able to
+        // delete files in Alluxio only.
+        mFileSystemMaster.delete(new AlluxioURI(path),
+            DeleteOptions.defaults().setRecursive(recursive).setUnchecked(options.isUnchecked()));
+      } else {
+        mFileSystemMaster.delete(new AlluxioURI(path), new DeleteOptions(options));
+      }
+      return new DeleteTResponse();
+    }, "Remove", "path=%s, recursive=%s, options=%s", path, recursive, options);
+>>>>>>> upstream/master
   }
 
   @Override
@@ -290,10 +391,34 @@ public final class FileSystemMasterClientServiceHandler
   }
 
   @Override
+<<<<<<< HEAD
   public void unmount(UnmountPRequest request, StreamObserver<UnmountPResponse> responseObserver) {
     String alluxioPath = request.getAlluxioPath();
     UnmountPOptions options = request.getOptions();
     RpcUtils.call(LOG, (RpcUtils.RpcCallableThrowsIOException<UnmountPResponse>) () -> {
+=======
+  public StartSyncTResponse startSync(String path, StartSyncTOptions options)
+      throws AlluxioTException {
+    return RpcUtils.call(LOG, (RpcCallableThrowsIOException<StartSyncTResponse>) () -> {
+      mFileSystemMaster.startSync(new AlluxioURI(path));
+      return new StartSyncTResponse();
+    }, "StartSync", "path=%s, options=%s", path, options);
+  }
+
+  @Override
+  public StopSyncTResponse stopSync(String path, StopSyncTOptions options)
+      throws AlluxioTException {
+    return RpcUtils.call(LOG, (RpcCallableThrowsIOException<StopSyncTResponse>) () -> {
+      mFileSystemMaster.stopSync(new AlluxioURI(path));
+      return new StopSyncTResponse();
+    }, "StopSync", "path=%s, options=%s", path, options);
+  }
+
+  @Override
+  public UnmountTResponse unmount(final String alluxioPath, final UnmountTOptions options)
+      throws AlluxioTException {
+    return RpcUtils.call(LOG, (RpcCallableThrowsIOException<UnmountTResponse>) () -> {
+>>>>>>> upstream/master
       mFileSystemMaster.unmount(new AlluxioURI(alluxioPath));
       return UnmountPResponse.newBuilder().build();
     }, "Unmount", "alluxioPath=%s, options=%s", responseObserver, alluxioPath, options);

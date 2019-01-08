@@ -21,18 +21,22 @@ import alluxio.PropertyKey;
 import alluxio.grpc.CreateFilePOptions;
 import alluxio.grpc.RegisterWorkerPOptions;
 import alluxio.job.replicate.ReplicationHandler;
-import alluxio.master.MasterContext;
+import alluxio.master.CoreMasterContext;
 import alluxio.master.MasterRegistry;
 import alluxio.master.MasterTestUtils;
 import alluxio.master.block.BlockMaster;
 import alluxio.master.block.BlockMasterFactory;
 import alluxio.master.file.RpcContext;
+<<<<<<< HEAD
 import alluxio.master.file.contexts.CreateFileContext;
 import alluxio.master.file.contexts.CreatePathContext;
+=======
+import alluxio.master.file.meta.LockedInodePath;
+>>>>>>> upstream/master
 import alluxio.master.file.meta.InodeDirectoryIdGenerator;
 import alluxio.master.file.meta.InodeFile;
 import alluxio.master.file.meta.InodeTree;
-import alluxio.master.file.meta.LockedInodePath;
+import alluxio.master.file.meta.InodeTree.LockPattern;
 import alluxio.master.file.meta.MountTable;
 import alluxio.master.file.meta.options.MountInfo;
 import alluxio.master.journal.JournalSystem;
@@ -122,7 +126,7 @@ public final class ReplicationCheckerTest {
   public void before() throws Exception {
     MasterRegistry registry = new MasterRegistry();
     JournalSystem journalSystem = JournalTestUtils.createJournalSystem(mTestFolder);
-    MasterContext context = MasterTestUtils.testMasterContext(journalSystem);
+    CoreMasterContext context = MasterTestUtils.testMasterContext(journalSystem);
     new MetricsMasterFactory().create(registry, context);
     mBlockMaster = new BlockMasterFactory().create(registry, context);
     InodeDirectoryIdGenerator directoryIdGenerator = new InodeDirectoryIdGenerator(mBlockMaster);
@@ -155,9 +159,14 @@ public final class ReplicationCheckerTest {
    * @param context context to create the file
    * @return the block ID
    */
+<<<<<<< HEAD
   private long createBlockHelper(AlluxioURI path, CreatePathContext<?, ?> context)
       throws Exception {
     try (LockedInodePath inodePath = mInodeTree.lockInodePath(path, InodeTree.LockMode.WRITE)) {
+=======
+  private long createBlockHelper(AlluxioURI path, CreatePathOptions<?> options) throws Exception {
+    try (LockedInodePath inodePath = mInodeTree.lockInodePath(path, LockPattern.WRITE_EDGE)) {
+>>>>>>> upstream/master
       InodeTree.CreatePathResult result =
           mInodeTree.createPath(RpcContext.NOOP, inodePath, context);
       InodeFile inodeFile = (InodeFile) result.getCreated().get(0);
@@ -212,7 +221,7 @@ public final class ReplicationCheckerTest {
    */
   private void heartbeatToAddLocationHelper(long blockId, long workerId) throws Exception {
     List<Long> addedBlocks = ImmutableList.of(blockId);
-    mBlockMaster.workerHeartbeat(workerId, ImmutableMap.of("MEM", 0L), NO_BLOCKS,
+    mBlockMaster.workerHeartbeat(workerId, null, ImmutableMap.of("MEM", 0L), NO_BLOCKS,
         ImmutableMap.of("MEM", addedBlocks), NO_METRICS);
   }
 
@@ -296,8 +305,8 @@ public final class ReplicationCheckerTest {
     mBlockMaster.commitBlock(workerId, 50L, "MEM", blockId, 20L);
 
     // Indicate that blockId is removed on the worker.
-    mBlockMaster.workerHeartbeat(workerId, ImmutableMap.of("MEM", 0L), ImmutableList.of(blockId),
-        NO_BLOCKS_ON_TIERS, NO_METRICS);
+    mBlockMaster.workerHeartbeat(workerId, null, ImmutableMap.of("MEM", 0L),
+        ImmutableList.of(blockId), NO_BLOCKS_ON_TIERS, NO_METRICS);
 
     mReplicationChecker.heartbeat();
     Assert.assertEquals(EMPTY, mMockReplicationHandler.getEvictRequests());

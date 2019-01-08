@@ -24,8 +24,12 @@ import static org.mockito.Mockito.when;
 import alluxio.ConfigurationRule;
 import alluxio.PropertyKey;
 import alluxio.RuntimeConstants;
+<<<<<<< HEAD
 import alluxio.grpc.RegisterWorkerPOptions;
 import alluxio.master.MasterContext;
+=======
+import alluxio.master.CoreMasterContext;
+>>>>>>> upstream/master
 import alluxio.master.MasterProcess;
 import alluxio.master.MasterRegistry;
 import alluxio.master.MasterTestUtils;
@@ -114,7 +118,7 @@ public final class AlluxioMasterRestServiceHandlerTest {
     mMasterProcess = mock(MasterProcess.class);
     ServletContext context = mock(ServletContext.class);
     mRegistry = new MasterRegistry();
-    MasterContext masterContext = MasterTestUtils.testMasterContext();
+    CoreMasterContext masterContext = MasterTestUtils.testMasterContext();
     mMetricsMaster = new MetricsMasterFactory().create(mRegistry, masterContext);
     mRegistry.add(MetricsMaster.class, mMetricsMaster);
     registerMockUfs();

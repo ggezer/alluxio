@@ -53,6 +53,22 @@ import alluxio.grpc.UpdateUfsModePOptions;
 import alluxio.grpc.UpdateUfsModePRequest;
 import alluxio.master.MasterClientConfig;
 import alluxio.security.authorization.AclEntry;
+<<<<<<< HEAD
+=======
+import alluxio.thrift.AlluxioService;
+import alluxio.thrift.FileSystemMasterClientService;
+import alluxio.thrift.GetMountTableTResponse;
+import alluxio.thrift.GetNewBlockIdForFileTOptions;
+import alluxio.thrift.LoadMetadataTOptions;
+import alluxio.thrift.ScheduleAsyncPersistenceTOptions;
+import alluxio.thrift.StartSyncTOptions;
+import alluxio.thrift.StopSyncTOptions;
+import alluxio.thrift.UnmountTOptions;
+import alluxio.wire.FileInfo;
+import alluxio.wire.MountPointInfo;
+import alluxio.wire.SetAclAction;
+import alluxio.wire.SyncPointInfo;
+>>>>>>> upstream/master
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -163,7 +179,19 @@ public final class RetryHandlingFileSystemMasterClient extends AbstractMasterCli
   }
 
   @Override
+<<<<<<< HEAD
   public long getNewBlockIdForFile(final AlluxioURI path)
+=======
+  public synchronized List<SyncPointInfo> getSyncPathList()
+      throws AlluxioStatusException {
+    return retryRPC(() -> mClient.getSyncPathList().getSyncPathList().stream()
+        .map(x -> alluxio.wire.SyncPointInfo.fromThrift(x)).collect(Collectors.toList()),
+        "GetSyncPathList");
+  }
+
+  @Override
+  public synchronized long getNewBlockIdForFile(final AlluxioURI path)
+>>>>>>> upstream/master
       throws AlluxioStatusException {
     return retryRPC(
         () -> mClient
@@ -250,11 +278,30 @@ public final class RetryHandlingFileSystemMasterClient extends AbstractMasterCli
   }
 
   @Override
+<<<<<<< HEAD
   public void unmount(final AlluxioURI alluxioPath) throws AlluxioStatusException {
     retryRPC(() -> mClient
         .unmount(UnmountPRequest.newBuilder().setAlluxioPath(alluxioPath.toString())
             .setOptions(UnmountPOptions.newBuilder().build()).build()),
         "Unmount");
+=======
+  public synchronized void startSync(final AlluxioURI path)
+      throws AlluxioStatusException {
+    retryRPC(() -> mClient.startSync(path.getPath(),
+        new StartSyncTOptions()), "StartSync");
+  }
+
+  @Override
+  public synchronized void stopSync(final AlluxioURI path)
+      throws AlluxioStatusException {
+    retryRPC(() -> mClient.stopSync(path.getPath(),
+        new StopSyncTOptions()), "StopSync");
+  }
+
+  @Override
+  public synchronized void unmount(final AlluxioURI alluxioPath) throws AlluxioStatusException {
+    retryRPC(() -> mClient.unmount(alluxioPath.toString(), new UnmountTOptions()), "Unmount");
+>>>>>>> upstream/master
   }
 
   @Override

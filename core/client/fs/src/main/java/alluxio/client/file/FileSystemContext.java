@@ -27,7 +27,12 @@ import alluxio.master.MasterClientConfig;
 import alluxio.master.MasterInquireClient;
 import alluxio.metrics.MetricsSystem;
 import alluxio.resource.CloseableResource;
+<<<<<<< HEAD
 import alluxio.util.IdUtils;
+=======
+import alluxio.security.authentication.TransportProviderUtils;
+import alluxio.util.CommonUtils;
+>>>>>>> upstream/master
 import alluxio.util.ThreadFactoryUtils;
 import alluxio.util.ThreadUtils;
 import alluxio.util.network.NetworkAddressUtils;
@@ -92,7 +97,6 @@ public final class FileSystemContext implements Closeable {
   private MetricsMasterClient mMetricsMasterClient;
   private ClientMasterSync mClientMasterSync;
 
-  private final String mAppId;
   @GuardedBy("CONTEXT_CACHE_LOCK")
   private int mRefCount;
 
@@ -183,11 +187,6 @@ public final class FileSystemContext implements Closeable {
     mParentSubject = subject;
     mExecutorService = Executors.newFixedThreadPool(1,
         ThreadFactoryUtils.build("metrics-master-heartbeat-%d", true));
-    mAppId = Configuration.containsKey(PropertyKey.USER_APP_ID)
-        ? Configuration.get(PropertyKey.USER_APP_ID) : IdUtils.createFileSystemContextId();
-    LOG.info("Created filesystem context with id {}. This ID will be used for identifying info "
-        + "from the client, such as metrics. It can be set manually through the {} property",
-        mAppId, PropertyKey.Name.USER_APP_ID);
     mClosed = new AtomicBoolean(false);
     mRefCount = 0;
   }
@@ -288,13 +287,6 @@ public final class FileSystemContext implements Closeable {
   }
 
   /**
-   * @return the unique id of the context
-   */
-  public String getId() {
-    return mAppId;
-  }
-
-  /**
    * @return the parent subject
    */
   public Subject getParentSubject() {
@@ -370,10 +362,35 @@ public final class FileSystemContext implements Closeable {
    * @param workerNetAddress the network address of the channel
    * @return the acquired block worker
    */
+<<<<<<< HEAD
   public BlockWorkerClient acquireBlockWorkerClient(final WorkerNetAddress workerNetAddress)
       throws IOException {
     SocketAddress address = NetworkAddressUtils.getDataPortSocketAddress(workerNetAddress);
     return BlockWorkerClient.Factory.create(mParentSubject, address);
+=======
+  public Channel acquireNettyChannel(final WorkerNetAddress workerNetAddress) throws IOException {
+    return acquireNettyChannelInternal(new NettyChannelProperties(workerNetAddress));
+  }
+
+  private Channel acquireNettyChannelInternal(final NettyChannelProperties channelProperties)
+          throws IOException {
+    SocketAddress address = NetworkAddressUtils.getDataPortSocketAddress(
+        channelProperties.getWorkerNetAddress());
+    ChannelPoolKey key =
+        new ChannelPoolKey(address, TransportProviderUtils.getImpersonationUser(mParentSubject));
+    if (!mNettyChannelPools.containsKey(key)) {
+      Bootstrap bs = NettyClient.createClientBootstrap(mParentSubject, address);
+      bs.remoteAddress(address);
+      NettyChannelPool pool = new NettyChannelPool(bs,
+          Configuration.getInt(PropertyKey.USER_NETWORK_NETTY_CHANNEL_POOL_SIZE_MAX),
+          Configuration.getMs(PropertyKey.USER_NETWORK_NETTY_CHANNEL_POOL_GC_THRESHOLD_MS));
+      if (mNettyChannelPools.putIfAbsent(key, pool) != null) {
+        // This can happen if this function is called concurrently.
+        pool.close();
+      }
+    }
+    return mNettyChannelPools.get(key).acquire();
+>>>>>>> upstream/master
   }
 
   /**
@@ -550,6 +567,18 @@ public final class FileSystemContext implements Closeable {
           .add("socketAddress", mSocketAddress)
           .add("username", mUsername)
           .toString();
+    }
+  }
+
+  private static final class NettyChannelProperties {
+    private WorkerNetAddress mWorkerNetAddress;
+
+    public NettyChannelProperties(WorkerNetAddress workerNetAddress) {
+      mWorkerNetAddress = workerNetAddress;
+    }
+
+    public WorkerNetAddress getWorkerNetAddress() {
+      return mWorkerNetAddress;
     }
   }
 }

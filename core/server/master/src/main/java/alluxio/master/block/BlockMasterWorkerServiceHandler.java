@@ -62,6 +62,7 @@ public final class BlockMasterWorkerServiceHandler
   public void blockHeartbeat(BlockHeartbeatPRequest request,
       StreamObserver<BlockHeartbeatPResponse> responseObserver) {
 
+<<<<<<< HEAD
     final long workerId = request.getWorkerId();
     final Map<String, Long> usedBytesOnTiers = request.getUsedBytesOnTiersMap();
     final List<Long> removedBlockIds = request.getRemovedBlockIdsList();
@@ -81,6 +82,26 @@ public final class BlockMasterWorkerServiceHandler
                   addedBlocksOnTiersMap, metrics))
               .build();
         }, "blockHeartbeat", "request=%s", responseObserver, request);
+=======
+  @Override
+  public BlockHeartbeatTResponse blockHeartbeat(final long workerId,
+      final Map<String, Long> usedBytesOnTiers, final List<Long> removedBlockIds,
+      final Map<String, List<Long>> addedBlocksOnTiers, BlockHeartbeatTOptions options)
+      throws AlluxioTException {
+    return RpcUtils.call(
+        LOG,
+        (RpcCallable<BlockHeartbeatTResponse>) () -> {
+          List<Metric> metrics = Lists.newArrayList();
+          for (alluxio.thrift.Metric metric : options.getMetrics()) {
+            metrics.add(Metric.from(metric));
+          }
+          return new BlockHeartbeatTResponse(mBlockMaster.workerHeartbeat(workerId,
+              options.getCapacityBytesOnTiers(), usedBytesOnTiers, removedBlockIds,
+              addedBlocksOnTiers, metrics));
+        }, "BlockHeartbeat",
+        "workerId=%s, usedBytesOnTiers=%s, removedBlockIds=%s, addedBlocksOnTiers=%s, options=%s",
+        workerId, usedBytesOnTiers, removedBlockIds, addedBlocksOnTiers, options);
+>>>>>>> upstream/master
   }
 
   @Override

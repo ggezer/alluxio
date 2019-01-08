@@ -14,8 +14,6 @@ package alluxio.master.file;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import alluxio.AlluxioTestDirectory;
 import alluxio.AlluxioURI;
@@ -29,6 +27,7 @@ import alluxio.PropertyKey;
 import alluxio.exception.AccessControlException;
 import alluxio.exception.ExceptionMessage;
 import alluxio.exception.FileDoesNotExistException;
+<<<<<<< HEAD
 import alluxio.grpc.CompleteFilePOptions;
 import alluxio.grpc.CreateDirectoryPOptions;
 import alluxio.grpc.CreateFilePOptions;
@@ -38,11 +37,13 @@ import alluxio.grpc.SetAttributePOptions;
 import alluxio.grpc.TtlAction;
 import alluxio.master.DefaultSafeModeManager;
 import alluxio.master.MasterContext;
+=======
+import alluxio.master.CoreMasterContext;
+>>>>>>> upstream/master
 import alluxio.master.MasterRegistry;
 import alluxio.master.MasterTestUtils;
-import alluxio.master.SafeModeManager;
-import alluxio.master.block.BlockMaster;
 import alluxio.master.block.BlockMasterFactory;
+<<<<<<< HEAD
 import alluxio.master.file.meta.Inode;
 import alluxio.master.file.meta.InodeDirectory;
 import alluxio.master.file.meta.InodeFile;
@@ -59,20 +60,29 @@ import alluxio.master.file.contexts.GetStatusContext;
 import alluxio.master.file.contexts.ListStatusContext;
 import alluxio.master.file.contexts.RenameContext;
 import alluxio.master.file.contexts.SetAttributeContext;
+=======
+import alluxio.master.file.meta.InodeDirectory;
+import alluxio.master.file.options.CompleteFileOptions;
+import alluxio.master.file.options.CreateDirectoryOptions;
+import alluxio.master.file.options.CreateFileOptions;
+import alluxio.master.file.options.DeleteOptions;
+import alluxio.master.file.options.FreeOptions;
+import alluxio.master.file.options.GetStatusOptions;
+import alluxio.master.file.options.ListStatusOptions;
+import alluxio.master.file.options.RenameOptions;
+import alluxio.master.file.options.SetAttributeOptions;
+>>>>>>> upstream/master
 import alluxio.master.metrics.MetricsMaster;
 import alluxio.master.metrics.MetricsMasterFactory;
 import alluxio.security.GroupMappingServiceTestUtils;
 import alluxio.security.authorization.Mode;
 import alluxio.security.group.GroupMappingService;
-import alluxio.util.CommonUtils;
 import alluxio.util.SecurityUtils;
 import alluxio.util.io.PathUtils;
 import alluxio.wire.FileInfo;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -122,14 +132,8 @@ public final class PermissionCheckTest {
   private static final Mode TEST_FILE_MODE = new Mode((short) 0755);
 
   private MasterRegistry mRegistry;
-  private SafeModeManager mSafeModeManager;
-  private long mStartTimeMs;
-  private int mPort;
   private MetricsMaster mMetricsMaster;
   private FileSystemMaster mFileSystemMaster;
-  private BlockMaster mBlockMaster;
-
-  private InodeTree mInodeTree;
 
   @Rule
   public ConfigurationRule mConfiguration =
@@ -203,17 +207,13 @@ public final class PermissionCheckTest {
     GroupMappingServiceTestUtils.resetCache();
     mRegistry = new MasterRegistry();
     mRegistry.add(MetricsMaster.class, mMetricsMaster);
-    mSafeModeManager = new DefaultSafeModeManager();
-    MasterContext masterContext = MasterTestUtils.testMasterContext();
+    CoreMasterContext masterContext = MasterTestUtils.testMasterContext();
     mMetricsMaster = new MetricsMasterFactory().create(mRegistry, masterContext);
-    mBlockMaster = new BlockMasterFactory().create(mRegistry, masterContext);
+    new BlockMasterFactory().create(mRegistry, masterContext);
     mFileSystemMaster = new FileSystemMasterFactory().create(mRegistry, masterContext);
     mRegistry.start(true);
 
     createDirAndFileForTest();
-
-    mInodeTree = mock(InodeTree.class);
-    when(mInodeTree.getRootUserName()).thenReturn(TEST_USER_ADMIN.getUser());
   }
 
   @After
@@ -262,45 +262,6 @@ public final class PermissionCheckTest {
         CreateDirectoryContext
             .defaults(CreateDirectoryPOptions.newBuilder().setMode(TEST_DIR_MODE.toShort()))
             .setOwner(TEST_USER_ADMIN.getUser()).setGroup(TEST_USER_ADMIN.getGroup()));
-  }
-
-  @Test
-  public void getPermissionOwner() throws Exception {
-    ArrayList<Triple<String, String, Mode>> permissions = new ArrayList<>();
-    permissions.add(new ImmutableTriple<>(TEST_USER_1.getUser(), TEST_USER_1.getGroup(),
-        new Mode((short) 0754)));
-    LockedInodePath lockedInodePath = getLockedInodePath(permissions);
-    try (Closeable r = new AuthenticatedUserRule(TEST_USER_1.getUser()).toResource()) {
-      PermissionChecker checker = new DefaultPermissionChecker(mInodeTree);
-      Mode.Bits actual = checker.getPermission(lockedInodePath);
-      assertEquals(Mode.Bits.ALL, actual);
-    }
-  }
-
-  @Test
-  public void getPermissionGroup() throws Exception {
-    ArrayList<Triple<String, String, Mode>> permissions = new ArrayList<>();
-    permissions.add(new ImmutableTriple<>(TEST_USER_1.getUser(), TEST_USER_1.getGroup(),
-        new Mode((short) 0754)));
-    LockedInodePath lockedInodePath = getLockedInodePath(permissions);
-    try (Closeable r = new AuthenticatedUserRule(TEST_USER_3.getUser()).toResource()) {
-      PermissionChecker checker = new DefaultPermissionChecker(mInodeTree);
-      Mode.Bits actual = checker.getPermission(lockedInodePath);
-      assertEquals(Mode.Bits.READ_EXECUTE, actual);
-    }
-  }
-
-  @Test
-  public void getPermissionOther() throws Exception {
-    ArrayList<Triple<String, String, Mode>> permissions = new ArrayList<>();
-    permissions.add(new ImmutableTriple<>(TEST_USER_1.getUser(), TEST_USER_1.getGroup(),
-        new Mode((short) 0754)));
-    LockedInodePath lockedInodePath = getLockedInodePath(permissions);
-    try (Closeable r  = new AuthenticatedUserRule(TEST_USER_2.getUser()).toResource()) {
-      PermissionChecker checker = new DefaultPermissionChecker(mInodeTree);
-      Mode.Bits actual = checker.getPermission(lockedInodePath);
-      assertEquals(Mode.Bits.READ, actual);
-    }
   }
 
   /**
@@ -978,6 +939,7 @@ public final class PermissionCheckTest {
             .append(inodeName);
     return stringBuilder.toString();
   }
+<<<<<<< HEAD
 
   private LockedInodePath getLockedInodePath(ArrayList<Triple<String, String, Mode>> permissions)
       throws Exception {
@@ -1009,4 +971,6 @@ public final class PermissionCheckTest {
     }
     return new MutableLockedInodePath(new AlluxioURI(uri), lockList, InodeTree.LockMode.READ);
   }
+=======
+>>>>>>> upstream/master
 }

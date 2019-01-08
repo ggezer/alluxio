@@ -78,6 +78,7 @@ public final class KeyValueWorkerClient extends AbstractClient {
    * @param key the key to get the value for
    * @return ByteBuffer of value, or null if not found
    */
+<<<<<<< HEAD
   public ByteBuffer get(final long blockId, final ByteBuffer key)
       throws IOException {
     return retryRPC(new RpcCallable<ByteBuffer>() {
@@ -88,6 +89,11 @@ public final class KeyValueWorkerClient extends AbstractClient {
             .getData().toByteArray());
       }
     });
+=======
+  public synchronized ByteBuffer get(final long blockId, final ByteBuffer key)
+      throws IOException, AlluxioException {
+    return retryRPC(() -> mClient.get(blockId, key, new GetTOptions()).bufferForData());
+>>>>>>> upstream/master
   }
 
   /**

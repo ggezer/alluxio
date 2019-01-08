@@ -48,6 +48,7 @@ public final class InconsistentProperty {
    */
   protected InconsistentProperty(alluxio.grpc.InconsistentProperty inconsistentProperty) {
     mName = inconsistentProperty.getName();
+<<<<<<< HEAD
     mValues = new HashMap<>(inconsistentProperty.getValuesCount());
     for (Map.Entry<String, InconsistentPropertyValues> entry : inconsistentProperty.getValuesMap()
         .entrySet()) {
@@ -57,6 +58,12 @@ public final class InconsistentProperty {
         mValues.put(Optional.of(entry.getKey()), entry.getValue().getValuesList());
       }
     }
+=======
+    mValues = inconsistentProperty.getValues().entrySet().stream()
+        .collect(Collectors.toMap(
+            e -> OptionalString.fromThrift(e.getKey()).getValue(),
+            Map.Entry::getValue));
+>>>>>>> upstream/master
   }
 
   /**

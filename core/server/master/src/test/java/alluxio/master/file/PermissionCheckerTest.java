@@ -21,17 +21,22 @@ import alluxio.PropertyKey;
 import alluxio.exception.AccessControlException;
 import alluxio.exception.ExceptionMessage;
 import alluxio.exception.InvalidPathException;
+<<<<<<< HEAD
 import alluxio.grpc.CreateFilePOptions;
 import alluxio.master.MasterContext;
+=======
+import alluxio.master.CoreMasterContext;
+>>>>>>> upstream/master
 import alluxio.master.MasterRegistry;
 import alluxio.master.MasterTestUtils;
 import alluxio.master.block.BlockMaster;
 import alluxio.master.block.BlockMasterFactory;
+import alluxio.master.file.meta.LockedInodePath;
 import alluxio.master.file.meta.InodeDirectoryIdGenerator;
 import alluxio.master.file.meta.InodeFile;
 import alluxio.master.file.meta.InodeTree;
+import alluxio.master.file.meta.InodeTree.LockPattern;
 import alluxio.master.file.meta.InodeView;
-import alluxio.master.file.meta.LockedInodePath;
 import alluxio.master.file.meta.MountTable;
 import alluxio.master.file.meta.options.MountInfo;
 import alluxio.master.file.contexts.CreateFileContext;
@@ -180,7 +185,7 @@ public final class PermissionCheckerTest {
 
     // setup an InodeTree
     sRegistry = new MasterRegistry();
-    MasterContext masterContext = MasterTestUtils.testMasterContext();
+    CoreMasterContext masterContext = MasterTestUtils.testMasterContext();
     sMetricsMaster = new MetricsMasterFactory().create(sRegistry, masterContext);
     sRegistry.add(MetricsMaster.class, sMetricsMaster);
     BlockMaster blockMaster = new BlockMasterFactory().create(sRegistry, masterContext);
@@ -227,10 +232,16 @@ public final class PermissionCheckerTest {
    */
   private static void createAndSetPermission(String path, CreateFileContext context)
       throws Exception {
+<<<<<<< HEAD
     try (
         LockedInodePath inodePath = sTree
             .lockInodePath(new AlluxioURI(path), InodeTree.LockMode.WRITE)) {
       InodeTree.CreatePathResult result = sTree.createPath(RpcContext.NOOP, inodePath, context);
+=======
+    try (LockedInodePath inodePath =
+        sTree.lockInodePath(new AlluxioURI(path), LockPattern.WRITE_EDGE)) {
+      InodeTree.CreatePathResult result = sTree.createPath(RpcContext.NOOP, inodePath, option);
+>>>>>>> upstream/master
       ((InodeFile) result.getCreated().get(result.getCreated().size() - 1))
           .setOwner(context.getOwner()).setGroup(context.getGroup())
           .setMode((short) context.getOptions().getMode());
@@ -254,19 +265,19 @@ public final class PermissionCheckerTest {
   @Test
   public void createFileAndDirs() throws Exception {
     try (LockedInodePath inodePath = sTree.lockInodePath(new AlluxioURI(TEST_DIR_FILE_URI),
-        InodeTree.LockMode.READ)) {
+        LockPattern.READ)) {
       verifyInodesList(TEST_DIR_FILE_URI.split("/"), inodePath.getInodeList());
     }
     try (LockedInodePath inodePath = sTree.lockInodePath(new AlluxioURI(TEST_FILE_URI),
-        InodeTree.LockMode.READ)) {
+        LockPattern.READ)) {
       verifyInodesList(TEST_FILE_URI.split("/"), inodePath.getInodeList());
     }
     try (LockedInodePath inodePath = sTree.lockInodePath(new AlluxioURI(TEST_WEIRD_FILE_URI),
-        InodeTree.LockMode.READ)) {
+        LockPattern.READ)) {
       verifyInodesList(TEST_WEIRD_FILE_URI.split("/"), inodePath.getInodeList());
     }
     try (LockedInodePath inodePath = sTree.lockInodePath(new AlluxioURI(TEST_NOT_EXIST_URI),
-        InodeTree.LockMode.READ)) {
+        LockPattern.READ)) {
       verifyInodesList(new String[]{"", "testDir"}, inodePath.getInodeList());
     }
   }
@@ -387,7 +398,7 @@ public final class PermissionCheckerTest {
   public void invalidPath() throws Exception {
     mThrown.expect(InvalidPathException.class);
     try (LockedInodePath inodePath = sTree
-        .lockInodePath(new AlluxioURI(""), InodeTree.LockMode.READ)) {
+        .lockInodePath(new AlluxioURI(""), LockPattern.READ)) {
       mPermissionChecker.checkPermission(Mode.Bits.WRITE, inodePath);
     }
   }
@@ -395,7 +406,7 @@ public final class PermissionCheckerTest {
   @Test
   public void getPermission() throws Exception {
     try (LockedInodePath path =
-             sTree.lockInodePath(new AlluxioURI(TEST_WEIRD_FILE_URI), InodeTree.LockMode.READ)) {
+             sTree.lockInodePath(new AlluxioURI(TEST_WEIRD_FILE_URI), LockPattern.READ)) {
       // user is admin
       AuthenticatedClientUser.set(TEST_USER_ADMIN.getUser());
       Mode.Bits perm = mPermissionChecker.getPermission(path);
@@ -425,7 +436,7 @@ public final class PermissionCheckerTest {
       throws Exception {
     AuthenticatedClientUser.set(user.getUser());
     try (LockedInodePath inodePath = sTree
-        .lockInodePath(new AlluxioURI(path), InodeTree.LockMode.READ)) {
+        .lockInodePath(new AlluxioURI(path), LockPattern.READ)) {
       mPermissionChecker.checkPermission(action, inodePath);
     }
   }
@@ -442,7 +453,7 @@ public final class PermissionCheckerTest {
       throws Exception {
     AuthenticatedClientUser.set(user.getUser());
     try (LockedInodePath inodePath = sTree
-        .lockInodePath(new AlluxioURI(path), InodeTree.LockMode.READ)) {
+        .lockInodePath(new AlluxioURI(path), LockPattern.READ)) {
       mPermissionChecker.checkParentPermission(action, inodePath);
     }
   }

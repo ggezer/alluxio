@@ -15,14 +15,19 @@ import static java.util.stream.Collectors.joining;
 
 import alluxio.exception.status.UnauthenticatedException;
 import alluxio.exception.status.UnavailableException;
+<<<<<<< HEAD
 import alluxio.grpc.GetServiceVersionPRequest;
 import alluxio.grpc.GrpcChannel;
 import alluxio.grpc.GrpcChannelBuilder;
 import alluxio.grpc.ServiceType;
 import alluxio.grpc.ServiceVersionClientServiceGrpc;
+=======
+import alluxio.network.thrift.ThriftUtils;
+import alluxio.retry.ExponentialBackoffRetry;
+>>>>>>> upstream/master
 import alluxio.retry.RetryPolicy;
 import alluxio.uri.Authority;
-import alluxio.uri.UnknownAuthority;
+import alluxio.uri.MultiMasterAuthority;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +49,13 @@ public class PollingMasterInquireClient implements MasterInquireClient {
 
   private final MultiMasterConnectDetails mConnectDetails;
   private final Supplier<RetryPolicy> mRetryPolicySupplier;
+
+  /**
+   * @param masterAddresses the potential master addresses
+   */
+  public PollingMasterInquireClient(List<InetSocketAddress> masterAddresses) {
+    this(masterAddresses, () -> new ExponentialBackoffRetry(20, 2000, 30));
+  }
 
   /**
    * @param masterAddresses the potential master addresses
@@ -130,8 +142,7 @@ public class PollingMasterInquireClient implements MasterInquireClient {
 
     @Override
     public Authority toAuthority() {
-      // TODO(andrew): add authority type for multiple masters
-      return new UnknownAuthority(mAddresses.stream()
+      return new MultiMasterAuthority(mAddresses.stream()
           .map(addr -> addr.getHostString() + ":" + addr.getPort()).collect(joining(",")));
     }
 
