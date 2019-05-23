@@ -57,10 +57,9 @@ public final class RocksUtils {
    * @return a byte array formed by writing a byte and and a long value as bytes
    */
   public static byte[] toByteArray(byte byte1, long long1) {
-    byte[] key = new byte[1 + Longs.BYTES];
-
+    byte[] key = new byte[1 + Long.BYTES];
     key[0] = byte1;
-    for (int i = Longs.BYTES; i > 0; i--) {
+    for (int i = Long.BYTES; i > 0; i--) {
       key[i] = (byte) (long1 & 0xffL);
       long1 >>= Byte.SIZE;
     }

@@ -343,10 +343,10 @@ public class RocksInodeStore implements InodeStore {
 
     @Override
     public void set(long id) {
-      // Create composite key for the given indice and id
+      // Create composite key for the given indice and id.
       byte[] indiceKey = RocksUtils.toByteArray(mIndiceType.getIndiceId(), id);
       try {
-        db().put(indiceKey, new byte[0]);
+        db().put(mIndicesColumn.get(), indiceKey, new byte[0]);
       } catch (RocksDBException rexc) {
         throw new RuntimeException(rexc);
       }
@@ -355,9 +355,9 @@ public class RocksInodeStore implements InodeStore {
     @Override
     public void unset(long id) {
       try {
-        // Create composite key for the given indice and id
+        // Create composite key for the given indice and id.
         byte[] indiceKey = RocksUtils.toByteArray(mIndiceType.getIndiceId(), id);
-        db().delete(indiceKey);
+        db().delete(mIndicesColumn.get(), indiceKey);
       } catch (RocksDBException rexc) {
         throw new RuntimeException(rexc);
       }
@@ -366,8 +366,9 @@ public class RocksInodeStore implements InodeStore {
     @Override
     public void clear() {
       try {
-        db().deleteRange(RocksUtils.toByteArray(mIndiceType.getIndiceId(), 0L),
-                RocksUtils.toByteArray(mIndiceType.getIndiceId() + 1, 0L));
+        db().deleteRange(mIndicesColumn.get(),
+            RocksUtils.toByteArray(mIndiceType.getIndiceId(), 0L),
+            RocksUtils.toByteArray(mIndiceType.getIndiceId() + 1, 0L));
       } catch (RocksDBException rexc) {
         throw new RuntimeException(rexc);
       }
