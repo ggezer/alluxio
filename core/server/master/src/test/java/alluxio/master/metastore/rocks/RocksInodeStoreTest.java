@@ -17,6 +17,7 @@ import static org.junit.Assert.assertThat;
 
 import alluxio.master.file.contexts.CreateDirectoryContext;
 import alluxio.master.file.meta.MutableInodeDirectory;
+import alluxio.master.metastore.InodeStore;
 import alluxio.master.metastore.InodeStore.WriteBatch;
 
 import org.junit.Rule;
@@ -24,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 public class RocksInodeStoreTest {
   @Rule
@@ -51,5 +53,38 @@ public class RocksInodeStoreTest {
     store.writeInode(MutableInodeDirectory.create(1, 0, "dir", CreateDirectoryContext.defaults()));
     assertEquals("dir", store.get(1).get().getName());
     assertThat(store.toStringEntries(), containsString("name=dir"));
+  }
+
+  @Test
+  public void indices() throws IOException {
+    RocksInodeStore store = new RocksInodeStore(mFolder.newFolder().getAbsolutePath());
+    InodeStore.InodeIndice indice = store.getIndice(InodeStore.InodeIndiceType.REPLICATION_LIMITED);
+    final int indiceCount = 10000000;
+    long queryStart = System.currentTimeMillis();
+    for (long i = 0; i < indiceCount; i++) {
+      indice.set(i);
+    }
+    long queryEnd = System.currentTimeMillis();
+    System.out.println(
+        String.format("Adding %s entries took %s ms.", indiceCount, queryEnd - queryStart));
+
+    queryStart = System.currentTimeMillis();
+    assertEquals(indiceCount, indice.size());
+    queryEnd = System.currentTimeMillis();
+    System.out.println(
+        String.format("Size() for %s entries took %s ms.", indiceCount, queryEnd - queryStart));
+
+    Iterator<Long> indiceIter = indice.iterator();
+
+    int iterated = 0;
+    queryStart = System.currentTimeMillis();
+    while (indiceIter.hasNext()) {
+      indiceIter.next();
+      iterated++;
+    }
+    assertEquals(iterated, indiceCount);
+    queryEnd = System.currentTimeMillis();
+    System.out.println(
+        String.format("Enumerating %s entries took %s ms.", indiceCount, queryEnd - queryStart));
   }
 }

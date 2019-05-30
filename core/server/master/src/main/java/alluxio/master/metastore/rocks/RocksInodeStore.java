@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -376,12 +377,16 @@ public class RocksInodeStore implements InodeStore {
 
     @Override
     public int size() {
-      return new RocksIndiceIterator(db().newIterator(mIndicesColumn.get()), mIndiceType).count();
+      return new RocksIndiceIterator(db().newIterator(mIndicesColumn.get(), new ReadOptions()
+          .setTotalOrderSeek(true).setFillCache(false).setTailing(true).setReadaheadSize(10000000)),
+          mIndiceType).count();
     }
 
     @Override
     public Iterator<Long> iterator() {
-      return new RocksIndiceIterator(db().newIterator(mIndicesColumn.get()), mIndiceType);
+      return new RocksIndiceIterator(db().newIterator(mIndicesColumn.get(), new ReadOptions()
+          .setTotalOrderSeek(true).setFillCache(false).setTailing(true).setReadaheadSize(10000000)),
+          mIndiceType);
     }
   }
 
@@ -460,11 +465,9 @@ public class RocksInodeStore implements InodeStore {
     @Override
     public Long next() {
       try {
-        // Use composite keyto retrieve actual Id for the indice.
-        // Reset indice type in the key buffer.
-        byte [] compositeKey = mRocksIterator.key();
-        compositeKey[0] = 0;
-        return Longs.fromByteArray(compositeKey);
+        // Use composite key to retrieve actual Id for the indice.
+        // The actual Id starts from index-1.
+        return ByteBuffer.wrap(mRocksIterator.key()).getLong(1);
       } finally {
         mRocksIterator.next();
       }
