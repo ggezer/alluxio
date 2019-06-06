@@ -89,6 +89,9 @@ public final class AlluxioSecondaryMaster implements Process {
     mRunning = true;
     mLatch.await();
     mJournalSystem.stop();
+    for (Master m : mRegistry.getServers()) {
+      m.stop();
+    }
     mRunning = false;
   }
 
