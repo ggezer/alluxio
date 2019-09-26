@@ -147,6 +147,11 @@ public class InodeLockManager {
   public LockResource lockInode(InodeView inode, LockMode mode) {
     return mInodeLocks.get(inode.getId(), mode);
   }
+  
+  public void setTombstone(InodeView inode) {
+    mInodeLocks.setTombstone(inode.getId());
+    mEdgeLocks.setTombstone(new Edge(inode.getParentId(), inode.getName()));
+  }
 
   /**
    * Attempts to acquire an inode lock.

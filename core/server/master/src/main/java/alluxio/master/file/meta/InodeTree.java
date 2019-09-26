@@ -893,6 +893,8 @@ public class InodeTree implements DelegatingJournaled {
     if (inode.isFile()) {
       rpcContext.getBlockDeletionContext().registerBlocksForDeletion(inode.asFile().getBlockIds());
     }
+
+    mInodeLockManager.setTombstone(inode);
   }
 
   private boolean checkPinningValidity(Set<String> pinnedMediumTypes) {

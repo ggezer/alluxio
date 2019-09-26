@@ -24,11 +24,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -60,6 +63,9 @@ public class LockPool<K> {
   private final Lock mEvictLock = new ReentrantLock();
   private final Condition mOverHighWatermark = mEvictLock.newCondition();
   private final ExecutorService mEvictor;
+  private final ScheduledExecutorService mTombstoneCleaner;
+
+  private final Set<K> mTombstones;
 
   /**
    * Constructor for a lock pool.
@@ -79,6 +85,17 @@ public class LockPool<K> {
     mEvictor = Executors.newSingleThreadExecutor(
         ThreadFactoryUtils.build(EVICTOR_THREAD_NAME, true));
     mEvictor.submit(new Evictor());
+
+    mTombstones = new ConcurrentHashSet<>();
+    mTombstoneCleaner =
+        Executors.newScheduledThreadPool(1, ThreadFactoryUtils.build("TombstoneCleaner-%d", true));
+    mTombstoneCleaner.scheduleAtFixedRate(() -> {
+      Iterator<K> tombstoneIter = mTombstones.iterator();
+      while (tombstoneIter.hasNext()) {
+        mPool.remove(tombstoneIter.next());
+        tombstoneIter.remove();
+      }
+    }, 1, 10, TimeUnit.SECONDS);
   }
 
   private final class Evictor implements Runnable {
@@ -163,6 +180,10 @@ public class LockPool<K> {
         }
       }
     }
+  }
+
+  public void setTombstone(K key) {
+    mTombstones.add(key);
   }
 
   /**

@@ -587,6 +587,8 @@ public class InodeTreePersistentState implements Journaled {
     long oldParent = inode.getParentId();
     long newParent = entry.getNewParentId();
 
+    mInodeLockManager.setTombstone(inode);
+
     mInodeStore.removeChild(oldParent, inode.getName());
     inode.setName(entry.getNewName());
     mInodeStore.addChild(newParent, inode);
