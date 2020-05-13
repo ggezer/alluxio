@@ -16,13 +16,18 @@ import alluxio.conf.PropertyKey;
 import alluxio.conf.ServerConfiguration;
 import alluxio.util.ThreadFactoryUtils;
 import alluxio.worker.block.BlockStoreLocation;
+import alluxio.worker.block.TieredBlockStore;
 import alluxio.worker.block.io.BlockReader;
 import alluxio.worker.block.io.BlockStreamListener;
 import alluxio.worker.block.io.BlockStreamTracker;
 import alluxio.worker.block.io.BlockWriter;
 
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -36,12 +41,15 @@ import java.util.concurrent.TimeUnit;
  * TODO(ggezer): Add a safety net against close calls not being called.
  */
 public class DefaultStoreLoadTracker implements StoreLoadTracker, BlockStreamListener {
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultStoreLoadTracker.class);
+
   /** Used to keep reference to stream readers/writers per location. */
   private final ConcurrentHashMap<BlockStoreLocation, Set<Object>> mStreamsPerLocation;
   /** Used for delayed removing of streams in order to emulate activity cool-down. */
   private final ScheduledExecutorService mScheduler;
   /** For how long, an activity will remain active on load state. */
   private final long mLoadDetectionCoolDownMs;
+  private final Map<String, Integer> mMediumLimits;
 
   /**
    * Creates the default load tracker instance.
@@ -52,6 +60,13 @@ public class DefaultStoreLoadTracker implements StoreLoadTracker, BlockStreamLis
         .newSingleThreadScheduledExecutor(ThreadFactoryUtils.build("load-tracker-thread-%d", true));
     mLoadDetectionCoolDownMs =
         ServerConfiguration.getMs(PropertyKey.WORKER_MANAGEMENT_LOAD_DETECTION_COOL_DOWN_TIME);
+    mMediumLimits = new HashMap<>();
+    mMediumLimits.put("MEM", ServerConfiguration
+        .getInt(PropertyKey.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_MEM));
+    mMediumLimits.put("SSD", ServerConfiguration
+        .getInt(PropertyKey.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_SSD));
+    mMediumLimits.put("HDD", ServerConfiguration
+        .getInt(PropertyKey.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_HDD));
 
     // BlockStreamTracker provides stream reader/writer events.
     BlockStreamTracker.registerListener(this);
@@ -63,7 +78,11 @@ public class DefaultStoreLoadTracker implements StoreLoadTracker, BlockStreamLis
       for (BlockStoreLocation trackedLocation : mStreamsPerLocation.keySet()) {
         if (trackedLocation.belongsTo(location)) {
           Set<Object> streamsPerLocation = mStreamsPerLocation.get(trackedLocation);
-          if (streamsPerLocation != null && streamsPerLocation.size() > 0) {
+          if (!mMediumLimits.containsKey(trackedLocation.mediumType())) {
+            LOG.warn("LocWithNoMediumType: {} ", trackedLocation);
+          }
+          if (streamsPerLocation != null && streamsPerLocation.size() >= mMediumLimits
+              .getOrDefault(trackedLocation.mediumType(), 1)) {
             return true;
           }
         }

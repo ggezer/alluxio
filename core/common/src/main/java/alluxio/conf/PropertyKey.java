@@ -2408,6 +2408,30 @@ public final class PropertyKey implements Comparable<PropertyKey> {
           .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
           .setScope(Scope.WORKER)
           .build();
+  public static final PropertyKey WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_MEM =
+      new Builder(Name.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_MEM)
+          .setDefaultValue(3)
+          .setDescription("Defines how many open user streams to a MEM medium "
+              + "will cause management tasks to back off from it.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.WORKER)
+          .build();
+  public static final PropertyKey WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_SSD =
+      new Builder(Name.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_SSD)
+          .setDefaultValue(2)
+          .setDescription("Defines how many open user streams to a SSD medium "
+              + "will cause management tasks to back off from it.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.WORKER)
+          .build();
+  public static final PropertyKey WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_HDD =
+      new Builder(Name.WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_HDD)
+          .setDefaultValue(1)
+          .setDescription("Defines how many open user streams to a HDD mediaum "
+              + "will cause management tasks to back off from it.")
+          .setConsistencyCheckLevel(ConsistencyCheckLevel.WARN)
+          .setScope(Scope.WORKER)
+          .build();
   public static final PropertyKey WORKER_MANAGEMENT_TIER_ALIGN_RESERVED_BYTES =
       new Builder(Name.WORKER_MANAGEMENT_TIER_ALIGN_RESERVED_BYTES)
           .setDefaultValue("1GB")
@@ -5024,6 +5048,12 @@ public final class PropertyKey implements Comparable<PropertyKey> {
         "alluxio.worker.management.backoff.strategy";
     public static final String WORKER_MANAGEMENT_LOAD_DETECTION_COOL_DOWN_TIME =
         "alluxio.worker.management.load.detection.cool.down.time";
+    public static final String WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_MEM =
+        "alluxio.worker.management.load.detection.medium.threshold.mem";
+    public static final String WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_SSD =
+        "alluxio.worker.management.load.detection.medium.threshold.ssd";
+    public static final String WORKER_MANAGEMENT_LOAD_DETECTION_MEDIUM_THRESHOLD_HDD =
+        "alluxio.worker.management.load.detection.medium.threshold.hdd";
     public static final String WORKER_MANAGEMENT_TASK_THREAD_COUNT =
         "alluxio.worker.management.task.thread.count";
     public static final String WORKER_MANAGEMENT_TIER_TASK_DISK_PARALLELISM =
